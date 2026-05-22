@@ -9,7 +9,14 @@
 
 ## 현재 마일스톤
 
-(아직 시작 전)
+**M1. 프로젝트 부트스트랩 + DB** (진행 중, 2026-05-22 시작)
+
+학습 모드로 5단계 분할:
+- [x] S1. 사전 준비 점검 + PROGRESS 갱신 + git tag
+- [ ] S2. Next.js 부트스트랩 (임시 폴더 + 머지 방식)
+- [ ] S3. 환경변수 + `lib/db.ts` (DB 단일 진입점)
+- [ ] S4. `supabase/migrations/001_init.sql` 작성 + 사용자가 SQL Editor에서 실행
+- [ ] S5. `npm run dev` 확인 + VALIDATION.md M1 체크박스 7종 통과 + 커밋
 
 ## 완료된 마일스톤
 
@@ -17,7 +24,7 @@
 
 ## 마지막 검증 (Last Validation)
 
-(없음)
+(없음 — S5에서 실행 예정)
 
 ## 실패한 시도 (Failed Attempts)
 
@@ -25,14 +32,14 @@
 
 ## 현재 최선 상태 (Current Best State)
 
-(아직 시작 전)
+S1 시작. PRD/.gitignore 보존 확정. Next.js 부트스트랩은 `_bootstrap/` 임시 폴더 경유로 진행하여 `PRD/`, `.gitignore`, `.git` 보호.
 
 ## 다음 단계 (Next Step)
 
-M1 시작:
-1. `npx create-next-app@latest .` 부트스트랩
-2. Supabase 프로젝트 생성 + `001_init.sql` 마이그레이션
-3. `.env.example` 작성
+S2 진입:
+1. `_bootstrap/` 임시 폴더에 `npx create-next-app@latest` 실행 (TypeScript + Tailwind + App Router)
+2. 생성 결과에서 `PRD/`, `.gitignore`를 제외한 파일만 루트로 머지
+3. `package.json`의 scripts에 `typecheck` 추가 확인
 
 ## 리스크 (Risks)
 
@@ -54,8 +61,9 @@ M1 시작:
 - 진행 방식: 마일스톤별 사용자 확인 (페어 프로그래밍 학습 모드)
 - 컴팩트 후 `goal-command.md` 본문 길이: 2,378자 / 4,000자 한도
 - 사전 준비 대기 항목 (M1 시작 전 사용자가 직접 발급):
-  - [ ] Supabase 프로젝트 생성 + URL, ANON_KEY, SERVICE_KEY 발급
-  - [ ] Google AI Studio에서 `GEMINI_API_KEY` 발급
-  - [ ] 법제처 Open API 신청해서 `KOREAN_LAW_API_KEY` 또는 `LAW_OC` 발급 (이전 레포에서 이미 받았다면 그거 재사용)
-  - [ ] GitHub 빈 레포지토리 생성 (예: `acrc-search`)
-  - [ ] Vercel 계정 (M5에서 사용)
+  - [x] Supabase 프로젝트 생성 + URL, ANON_KEY, SERVICE_KEY 발급
+  - [x] Google AI Studio에서 `GEMINI_API_KEY` 발급
+  - [x] 법제처 Open API 신청해서 `KOREAN_LAW_API_KEY` 또는 `LAW_OC` 발급
+  - [x] GitHub 빈 레포지토리 생성
+  - [x] Vercel 계정 (M5에서 사용)
+  - 사용자 확인: 2026-05-22, 5종 모두 완료
