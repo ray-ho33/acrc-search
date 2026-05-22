@@ -9,22 +9,38 @@
 
 ## 현재 마일스톤
 
-**M1. 프로젝트 부트스트랩 + DB** (진행 중, 2026-05-22 시작)
+**M1. 프로젝트 부트스트랩 + DB** (코드 측면 완료, 사용자 SQL 실행 대기)
 
 학습 모드로 5단계 분할:
-- [x] S1. 사전 준비 점검 + PROGRESS 갱신 + git tag
-- [ ] S2. Next.js 부트스트랩 (임시 폴더 + 머지 방식)
-- [ ] S3. 환경변수 + `lib/db.ts` (DB 단일 진입점)
-- [ ] S4. `supabase/migrations/001_init.sql` 작성 + 사용자가 SQL Editor에서 실행
-- [ ] S5. `npm run dev` 확인 + VALIDATION.md M1 체크박스 7종 통과 + 커밋
+- [x] S1. 사전 준비 점검 + PROGRESS 갱신 + git tag `m1-start`
+- [x] S2. Next.js 부트스트랩 (Next.js 16 + React 19 + Tailwind v4, 임시 폴더 + 머지 방식)
+- [x] S3. 환경변수 (`.env.example`) + `lib/db.ts` (DB 단일 진입점) + `lib/types.ts`
+- [x] S4. `supabase/migrations/001_init.sql` 작성 완료 — **사용자가 Supabase SQL Editor 에서 실행 필요**
+- [x] S5. `npm run dev` → HTTP 200 확인 + 필수 검증 5종 통과 + 커밋
+
+## 사용자 핸드오프 (M2 시작 전 필수)
+
+1. **`.env` 파일 생성**: `cp .env.example .env` 후 6개 변수 채우기
+   - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` — Supabase 대시보드 > Project Settings > API
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — 같은 곳
+   - `GEMINI_API_KEY`, `KOREAN_LAW_API_KEY`
+2. **Supabase SQL 실행**: `supabase/migrations/001_init.sql` 내용을 Supabase 대시보드 > SQL Editor > New query > Run
+3. **테이블 4종 생성 확인**: Table Editor 에서 `documents`, `document_embeds`, `feedback`, `users` 표시되는지 눈으로 확인
+4. **확인 후 M2 시작 요청**
 
 ## 완료된 마일스톤
 
-(없음)
+- M1 (코드): 2026-05-22, 커밋 + tag `m1-code-complete`
 
 ## 마지막 검증 (Last Validation)
 
-(없음 — S5에서 실행 예정)
+2026-05-22 (S5)
+- `npm run typecheck` ✅ (TypeScript 에러 0)
+- `npm run lint` ✅ (ESLint 에러 0)
+- `npm run build` ✅ (라우트 `/`, `/_not-found` 정적 생성)
+- `npm run dev` → `curl http://localhost:3000/` ✅ HTTP 200
+- `.env` 미존재 + `.gitignore` 에 `.env` 포함 ✅
+- git history 내 실제 API 키 0건 ✅
 
 ## 실패한 시도 (Failed Attempts)
 
@@ -36,10 +52,12 @@ S1 시작. PRD/.gitignore 보존 확정. Next.js 부트스트랩은 `_bootstrap/
 
 ## 다음 단계 (Next Step)
 
-S2 진입:
-1. `_bootstrap/` 임시 폴더에 `npx create-next-app@latest` 실행 (TypeScript + Tailwind + App Router)
-2. 생성 결과에서 `PRD/`, `.gitignore`를 제외한 파일만 루트로 머지
-3. `package.json`의 scripts에 `typecheck` 추가 확인
+**M2. 자료 수집 + 임베딩 파이프라인** (사용자 핸드오프 완료 후 시작)
+
+1. 이전 레포(`https://github.com/ray-ho33/jeob-su`)에서 `acr-download.mjs`, `gemini-embed.mjs`, `load-env.mjs` 를 `scripts/lib/` 로 복사
+2. `scripts/ingest-decisions.mjs` 작성 — 의결례 수집 → Supabase `documents` UPSERT
+3. `scripts/build-embeddings.mjs` 작성 — `RETRIEVAL_DOCUMENT` 임베딩 + L2 정규화 + `document_embeds` UPSERT
+4. 검증: `documents` 행 ≥ 10건, `document_embeds` 행 ≥ 50건
 
 ## 리스크 (Risks)
 
