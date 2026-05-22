@@ -1,0 +1,51 @@
+# ----- 비밀 파일 (절대 GitHub에 올리면 안 됨) -----
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+
+# ----- Node / Next.js -----
+node_modules/
+.next/
+out/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ----- OS / IDE -----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ----- 임시 파일 / 작업 산출물 -----
+*.tmp
+*.bak
+_*.py
+_*.txt
+_*.md
+
+# ----- 데이터 (자료 수집 결과는 용량이 커서 보통 git에서 제외) -----
+data/acr-decisions/text/
+data/acr-decisions/semantic/
+*.cache
+
+# ----- 첨부 기획서 (원본 docx는 GitHub에 올릴지 사용자 판단. 기본은 제외) -----
+고충처리_자료검색_지원시스템_기획서.docx
+
+# ----- Supabase 로컬 (사용 시) -----
+supabase/.branches/
+supabase/.temp/
+
+# ----- 외부 도구 (이 프로젝트 레포에 포함 안 함) -----
+gptaku_plugins/
