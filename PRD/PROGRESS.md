@@ -41,6 +41,15 @@
 - Supabase 행 수: `documents` 640, `document_embeds` 575, `feedback` 1
 - Vercel CLI/프로젝트 연결: 로컬에 없음 (`vercel` 없음, `.vercel` 없음)
 
+2026-05-27 (M5 — 로컬 smoke test)
+- `npm run dev` ✅ (`http://localhost:3000`)
+- 홈(`/`) 200 ✅
+- 빈 검색어 `POST /api/search` 400 + `EMPTY_QUERY` ✅
+- 검색어 `층간소음` `POST /api/search` 200 + 결과 3건 ✅
+- 상세 페이지 `/documents/11c155f5-9c7b-4332-ab53-1731317e65b0` 200 ✅
+- 환류 저장 `POST /api/feedback` 201 ✅ (`feedback` 테스트 행 `5ee25048-e1a6-453e-bb4b-2105d6ee72cc`)
+- Supabase 행 수: `documents` 640, `document_embeds` 575, `feedback` 2
+
 2026-05-24 (M5 — 배포 전 준비)
 - `npm test` ✅ (4 passed)
 - `npm run typecheck` ✅
