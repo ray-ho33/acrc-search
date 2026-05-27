@@ -2,7 +2,7 @@
 
 > 목적: **실제 Vercel 배포**를 누르기 전에 로컬·Git·Supabase 상태를 점검하고,  
 > Vercel 웹 대시보드에서 따라 할 단계를 한곳에 모아 둡니다.  
-> (2026-05-27 기준 GitHub push + 500건 인덱스 확장 완료, Vercel 배포 대기)
+> (2026-05-27 기준 Vercel Production 배포 + smoke test 완료)
 
 ## 0. 배포 전 준비 결과 (자동 점검 요약)
 
@@ -15,19 +15,20 @@
 | `.env` / `.vercel` Git 제외 | ✅ `.gitignore`에 등록됨 |
 | Git 브랜치 | `main` |
 | Git 원격 | `https://github.com/ray-ho33/acrc-search.git` |
-| GitHub push | ✅ `main -> origin/main`, latest `51a8270` |
+| GitHub push | ✅ `main -> origin/main`, latest `3d8421f` |
 | Git 히스토리 키 노출 | ✅ 의심 패턴 없음 |
 | `.env.example` | ✅ 값 비어 있음 (예시만) |
 | Supabase `service_role` | ✅ (`npm run check:db`) |
 | `documents` 행 수 | **640** (M5 목표 500건 달성) |
 | `document_embeds` 행 수 | **575** (M5 목표 500건 달성) |
 | `feedback` anon 직접 INSERT | ✅ RLS/권한으로 차단됨 |
+| Vercel Production URL | ✅ `https://acrc-search.vercel.app/` |
+| 배포 URL smoke test | ✅ 홈/검색/상세/환류/빈 검색어 통과 |
+| 검색 응답 시간 | ✅ 10회 최장 약 1.64초, P95 대략 2초 이하 |
 
-**아직 안 한 것:**
+**아직 안 한 것 / 선택 정리:**
 
-- Vercel 프로젝트 **Import** 및 **Production 배포**
-- Vercel **환경변수 6종** 등록
-- 배포 URL **smoke test** 및 응답 시간 10회 측정
+- 테스트용 `feedback` 행 정리 여부 결정 (`local-smoke-test`, `prod-smoke-test`)
 
 ---
 
@@ -82,6 +83,9 @@ Table Editor에서 `documents` ≥ 1, `document_embeds` ≥ 1 이면 검색 데�
 
 ## 3. Vercel 대시보드 — 프로젝트 연결 (A안)
 
+완료: `ray-ho33/acrc-search`를 Vercel 프로젝트 `acrc-search`로 Import.
+Production URL: `https://acrc-search.vercel.app/`
+
 1. [vercel.com](https://vercel.com) 로그인
 2. **Add New…** → **Project**
 3. **Import Git Repository** → `ray-ho33/acrc-search` 선택
@@ -95,6 +99,8 @@ Table Editor에서 `documents` ≥ 1, `document_embeds` ≥ 1 이면 검색 데�
 ---
 
 ## 4. Vercel 환경변수 등록 (Production)
+
+완료: 아래 6개 환경변수를 Production and Preview에 등록.
 
 Vercel 프로젝트 → **Settings** → **Environment Variables**
 
@@ -112,14 +118,16 @@ Vercel 프로젝트 → **Settings** → **Environment Variables**
 
 체크리스트:
 
-- [ ] `SUPABASE_SERVICE_KEY`가 `anon` 키가 **아님**
-- [ ] `NEXT_PUBLIC_` 변수에 `SERVICE_KEY`를 넣지 **않음**
-- [ ] Production에 6개(또는 `LAW_OC` 포함 7개) 등록 완료
-- [ ] 환경변수 저장 후 **Redeploy** 예정
+- [x] `SUPABASE_SERVICE_KEY`가 `anon` 키가 **아님**
+- [x] `NEXT_PUBLIC_` 변수에 `SERVICE_KEY`를 넣지 **않음**
+- [x] Production에 6개 등록 완료
+- [x] 환경변수 저장 후 Deploy 완료
 
 ---
 
 ## 5. 첫 Production 배포
+
+완료: `3d8421f` 커밋 기준 Production 배포 완료.
 
 1. 환경변수 저장
 2. **Deployments** → **Redeploy** (또는 Import 직후 첫 Deploy)
@@ -163,32 +171,33 @@ npm run check:db
 
 배포 URL에서 아래를 순서대로 확인합니다.
 
-- [ ] 홈(`/`) 200, 검색 UI 표시
-- [ ] 검색어 `층간소음` / `공공주택` / `퇴직금` 중 1개 이상 → 결과 카드 ≥ 1
-- [ ] **저장 원문 보기** → `/documents/[id]` 상세 + 원문 텍스트
-- [ ] 환류 입력 → 저장 → Supabase `feedback`에 행 추가
-- [ ] 빈 검색어 → 안내 메시지 (400)
+- [x] 홈(`/`) 200, 검색 UI 표시
+- [x] 검색어 `층간소음` → 결과 3건
+- [x] **저장 원문 보기** → `/documents/11c155f5-9c7b-4332-ab53-1731317e65b0` 200
+- [x] 환류 입력 → 저장 → Supabase `feedback`에 행 추가 (`6e153f6f-ac4e-4640-b82d-bf3f7751a990`)
+- [x] 빈 검색어 → 안내 메시지 (400, `EMPTY_QUERY`)
 
 응답 시간 (VALIDATION.md M5):
 
-- 같은 검색어로 **10회** 검색
-- 느린 응답이 P95 기준 2초 이하인지 대략 확인 (정밀 측정은 브라우저 Network 탭)
+- 같은 검색어로 **10회** 검색 완료
+- 응답 시간: `1.457934`, `1.641522`, `1.562737`, `0.999582`, `0.731515`, `0.775582`, `1.275733`, `0.760915`, `0.733723`, `0.991464`
+- 최장 약 1.64초, P95 대략 2초 이하
 
 ---
 
 ## 8. 배포 후 보안 빠른 확인
 
-- [ ] 브라우저 개발자 도구 → Network/소스에서 `SUPABASE_SERVICE_KEY`, `GEMINI_API_KEY` 문자열이 **보이지 않음**
+- [x] 배포 홈 HTML에서 `SUPABASE_SERVICE_KEY`, `GEMINI_API_KEY`, `KOREAN_LAW_API_KEY` 문자열이 **보이지 않음**
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`만 노출되는 것은 정상
 
 ---
 
 ## 9. M5 완료 선언 조건 (`VALIDATION.md` 요약)
 
-- [ ] Vercel Production URL 200
-- [ ] 환경변수 `.env.example`과 1:1 매칭
-- [ ] `documents` / `document_embeds` 각 ≥ 500
-- [ ] 배포 URL manual demo 통과
+- [x] Vercel Production URL 200
+- [x] 환경변수 `.env.example`과 1:1 매칭
+- [x] `documents` / `document_embeds` 각 ≥ 500
+- [x] 배포 URL manual demo 통과
 - [ ] `01_PRD.md` §7.2 acceptance criteria 10개 점검
 
 완료 후 `PRD/PROGRESS.md`에 배포 URL과 검증 날짜를 기록하세요.
@@ -197,9 +206,8 @@ npm run check:db
 
 ## 10. 다음에 같이 할 작업
 
-1. Git commit + push
-2. Vercel Import + 환경변수 + 첫 배포
-3. ingest/embed 500건
-4. 배포 URL smoke test
+1. 테스트용 feedback 행 정리 여부 결정
+2. `01_PRD.md` §7.2 acceptance criteria 10개 최종 점검
+3. 다음 마일스톤 범위 결정
 
-질문 예: **「M5 Vercel 배포 같이 해줘」**, **「500건 ingest/embed 같이 실행해줘」**
+질문 예: **「테스트용 feedback 행 정리해줘」**, **「M5 인수조건 최종 점검해줘」**

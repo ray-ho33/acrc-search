@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { FilterPanel } from "@/components/FilterPanel";
 import { ResultCard } from "@/components/ResultCard";
 import { SearchBar } from "@/components/SearchBar";
@@ -22,9 +22,10 @@ export function SearchExperience() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
 
-  async function runSearch() {
-    const trimmed = query.trim();
+  const executeSearch = useCallback(async (searchQuery: string, nextType: string, nextYear: string) => {
+    const trimmed = searchQuery.trim();
     setHasSearched(true);
     setError(null);
 
@@ -42,8 +43,8 @@ export function SearchExperience() {
         body: JSON.stringify({
           q: trimmed,
           filters: {
-            type,
-            year,
+            type: nextType,
+            year: nextYear,
           },
           limit: 10,
         }),
@@ -63,6 +64,36 @@ export function SearchExperience() {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  async function runSearch() {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setLastSubmittedQuery("");
+      await executeSearch(trimmed, type, year);
+      return;
+    }
+
+    if (trimmed === lastSubmittedQuery) {
+      await executeSearch(trimmed, type, year);
+      return;
+    }
+
+    setLastSubmittedQuery(trimmed);
+  }
+
+  function handleTypeChange(nextType: string) {
+    setType(nextType);
+    if (lastSubmittedQuery) {
+      void executeSearch(lastSubmittedQuery, nextType, year);
+    }
+  }
+
+  function handleYearChange(nextYear: string) {
+    setYear(nextYear);
+    if (lastSubmittedQuery) {
+      void executeSearch(lastSubmittedQuery, type, nextYear);
+    }
   }
 
   return (
@@ -70,8 +101,8 @@ export function SearchExperience() {
       <FilterPanel
         type={type}
         year={year}
-        onTypeChange={setType}
-        onYearChange={setYear}
+        onTypeChange={handleTypeChange}
+        onYearChange={handleYearChange}
       />
 
       <section className="space-y-5">

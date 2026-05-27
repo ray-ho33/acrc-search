@@ -9,15 +9,15 @@
 
 ## 현재 마일스톤
 
-**M5. 배포 + 인덱스 확장** (GitHub push + 500건 인덱스 확장 완료, 실제 Vercel 배포 대기)
+**M5. 배포 + 인덱스 확장** (완료)
 
 - [x] 로컬 품질 검증 (`test` / `typecheck` / `lint` / `build`)
 - [x] Git·보안·Supabase 배포 전 점검
 - [x] `PRD/M5_DEPLOY_CHECKLIST.md` 작성
 - [x] GitHub `main` push (`51a8270`)
-- [ ] Vercel Import + Production 환경변수 + 첫 배포
+- [x] Vercel Import + Production 환경변수 + 첫 배포
 - [x] ingest/embed 500건 확장
-- [ ] 배포 URL smoke test + P95 응답 시간 측정
+- [x] 배포 URL smoke test + P95 응답 시간 측정
 
 ## 완료된 마일스톤
 
@@ -33,8 +33,21 @@
 
 ## 마지막 검증 (Last Validation)
 
+2026-05-27 (M5 — Vercel Production 배포 + 배포 URL smoke test)
+- Production URL: `https://acrc-search.vercel.app/`
+- Vercel Import + 환경변수 6종 등록 + Deploy ✅
+- 배포 커밋: `3d8421f` (`docs: record local smoke test`) ✅
+- 홈(`/`) 200 ✅
+- 빈 검색어 `POST /api/search` 400 + `EMPTY_QUERY` ✅
+- 검색어 `층간소음` `POST /api/search` 200 + 결과 3건 ✅
+- 상세 페이지 `/documents/11c155f5-9c7b-4332-ab53-1731317e65b0` 200 ✅
+- 환류 저장 `POST /api/feedback` 201 ✅ (`feedback` 테스트 행 `6e153f6f-ac4e-4640-b82d-bf3f7751a990`)
+- 검색 응답 시간 10회: 최장 약 1.64초, P95 대략 2초 이하 ✅
+- 배포 홈 HTML에서 `SUPABASE_SERVICE_KEY`, `GEMINI_API_KEY`, `KOREAN_LAW_API_KEY` 문자열 노출 없음 ✅
+- Supabase 행 수: `documents` 640, `document_embeds` 575, `feedback` 3
+
 2026-05-27 (M5 — GitHub push + 인덱스 확장)
-- `git push origin main` ✅ (`main -> origin/main`, latest `51a8270`)
+- `git push origin main` ✅ (`main -> origin/main`, latest `3d8421f`)
 - `npm run ingest -- --max-pages 20` ✅
 - `npm run embed -- --limit 500` ✅ (성공 500, 스킵 0, 오류 0)
 - `npm run check:db` ✅ (`service_role`, documents 640건)
@@ -73,31 +86,28 @@
 
 ## 현재 최선 상태 (Current Best State)
 
-M5 **GitHub push + 500건 인덱스 확장**까지 완료. 로컬 빌드·보안·DB 점검 통과.
+M5 **Vercel Production 배포 + 배포 URL smoke test**까지 완료.
+Production URL은 `https://acrc-search.vercel.app/`.
 데이터는 M5 목표(500건)를 넘김 (`documents` 640, `document_embeds` 575).
-실제 Vercel 배포는 아직 대기 중이며, 로컬에 Vercel CLI/프로젝트 연결 정보가 없음.
 
 ## 다음 단계 (Next Step)
 
-**M5 실제 배포** — [`PRD/M5_DEPLOY_CHECKLIST.md`](./M5_DEPLOY_CHECKLIST.md)
+**M5 완료 후 정리**
 
-1. Vercel 대시보드에서 repo Import
-2. Production 환경변수 6종 등록 (`.env.example` 기준)
-3. 첫 Production 배포
-4. 배포 URL smoke test
-5. `PRD/PROGRESS.md`에 배포 URL과 검증 결과 기록
+1. 테스트용 `feedback` 행 정리 여부 결정 (`local-smoke-test`, `prod-smoke-test`)
+2. 다음 마일스톤 범위 결정 (예: 검색 품질 개선, 관리자 화면, 인증)
 
 ## 리스크 (Risks)
 
-- Vercel 환경변수 누락/오타 시 검색 API가 런타임 500을 낼 수 있음
-- `SUPABASE_SERVICE_KEY`를 `NEXT_PUBLIC_` 변수에 넣으면 안 됨
+- 테스트용 `feedback` 행 2건이 DB에 남아 있음
+- `SUPABASE_SERVICE_KEY`를 `NEXT_PUBLIC_` 변수에 넣으면 안 됨 (현재는 서버 전용 변수로 등록)
 - Supabase 무료 티어 / Gemini API 한도 — 추가 확장 시 모니터링
 
 ## 인수인계 메모 (Handoff Notes)
 
 - 사용자: 프로그래밍 초보자, 한국어/존댓말, 페어 프로그래밍 학습 목적
 - 환경변수는 절대 코드에 직접 넣지 말 것. `.env` / Vercel Env만 사용
-- M5 배포 방식: **Vercel 웹 대시보드(A안)** 권장 (사용자 선택: 오늘은 prep_only)
+- M5 배포 방식: **Vercel 웹 대시보드(A안)** 로 완료
 - 디자인: 인디고 톤 (`indigo-*` + `slate-*`)
 
 ## 골 시작 기록
