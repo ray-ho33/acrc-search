@@ -2,7 +2,7 @@
 
 > 목적: **실제 Vercel 배포**를 누르기 전에 로컬·Git·Supabase 상태를 점검하고,  
 > Vercel 웹 대시보드에서 따라 할 단계를 한곳에 모아 둡니다.  
-> (2026-05-24 기준 배포 전 준비 완료)
+> (2026-05-27 기준 GitHub push + 500건 인덱스 확장 완료, Vercel 배포 대기)
 
 ## 0. 배포 전 준비 결과 (자동 점검 요약)
 
@@ -15,26 +15,26 @@
 | `.env` / `.vercel` Git 제외 | ✅ `.gitignore`에 등록됨 |
 | Git 브랜치 | `main` |
 | Git 원격 | `https://github.com/ray-ho33/acrc-search.git` |
+| GitHub push | ✅ `main -> origin/main`, latest `51a8270` |
 | Git 히스토리 키 노출 | ✅ 의심 패턴 없음 |
 | `.env.example` | ✅ 값 비어 있음 (예시만) |
 | Supabase `service_role` | ✅ (`npm run check:db`) |
-| `documents` 행 수 | **200** (M5 목표 500건 미달 — 배포 전/후 확장 필요) |
-| `document_embeds` 행 수 | **75** (임베딩 500건 목표 미달 — 배포 전/후 확장 필요) |
+| `documents` 행 수 | **640** (M5 목표 500건 달성) |
+| `document_embeds` 행 수 | **575** (M5 목표 500건 달성) |
 | `feedback` anon 직접 INSERT | ✅ RLS/권한으로 차단됨 |
 
-**아직 안 한 것 (의도적으로 보류):**
+**아직 안 한 것:**
 
-- GitHub에 M2~M4 변경사항 **커밋 + push**
 - Vercel 프로젝트 **Import** 및 **Production 배포**
 - Vercel **환경변수 6종** 등록
-- 의결례 **500건** ingest + embed 확장
 - 배포 URL **smoke test** 및 응답 시간 10회 측정
 
 ---
 
 ## 1. 배포 전에 Git에 올릴 변경사항 정리
 
-현재 `main`에 커밋되지 않은 작업이 많습니다. Vercel은 GitHub `main`을 기준으로 빌드하므로, **배포 전에 커밋·push**가 필요합니다.
+완료: `main` 변경사항은 GitHub `origin/main`에 push됨 (`51a8270`).
+Vercel은 GitHub `main`을 기준으로 빌드할 수 있는 상태입니다.
 
 대표 포함 파일:
 
@@ -43,12 +43,12 @@
 - `supabase/migrations/002` ~ `005`
 - `tests/`, `package.json`, `PRD/` 문서
 
-초보자용 명령 예시:
+이미 실행한 명령:
 
 ```bash
 git add .
 git status   # .env 가 목록에 없는지 반드시 확인
-git commit -m "feat: M3 search, M4 feedback, M5 deploy prep"
+git commit -m "feat: add search feedback and deploy prep"
 git push origin main
 ```
 
@@ -75,8 +75,8 @@ Supabase **SQL Editor**에서 아래 파일을 **이미 실행했는지** 확인
 npm run check:db
 ```
 
-Table Editor에서 `documents` ≥ 1, `document_embeds` ≥ 1 이면 검색 데모는 가능합니다.  
-**M5 완료 기준(500건)** 은 아래 6절 ingest/embed를 추가로 실행해야 합니다.
+Table Editor에서 `documents` ≥ 1, `document_embeds` ≥ 1 이면 검색 데모는 가능합니다.
+현재는 `documents` 640, `document_embeds` 575로 **M5 데이터 기준(500건)** 을 달성했습니다.
 
 ---
 
@@ -139,7 +139,7 @@ Vercel 프로젝트 → **Settings** → **Environment Variables**
 
 ## 6. 인덱스 500건 확장 (M5 데이터 목표)
 
-배포 URL 데모 전에 **로컬 터미널**에서 실행합니다 (Vercel 빌드와 무관).
+완료: 배포 URL 데모 전에 **로컬 터미널**에서 실행했습니다 (Vercel 빌드와 무관).
 
 ```bash
 # 의결례 수집 → documents (대략 500건 목표)
@@ -155,7 +155,7 @@ npm run embed -- --limit 500
 npm run check:db
 ```
 
-목표: `documents` ≥ **500**, `document_embeds` ≥ **500**
+현재: `documents` **640**, `document_embeds` **575**
 
 ---
 

@@ -9,14 +9,14 @@
 
 ## 현재 마일스톤
 
-**M5. 배포 + 인덱스 확장** (배포 전 준비 완료, 실제 Vercel 배포는 보류)
+**M5. 배포 + 인덱스 확장** (GitHub push + 500건 인덱스 확장 완료, 실제 Vercel 배포 대기)
 
 - [x] 로컬 품질 검증 (`test` / `typecheck` / `lint` / `build`)
 - [x] Git·보안·Supabase 배포 전 점검
 - [x] `PRD/M5_DEPLOY_CHECKLIST.md` 작성
-- [ ] GitHub `main` push (M2~M4 미커밋 변경 다수)
+- [x] GitHub `main` push (`51a8270`)
 - [ ] Vercel Import + Production 환경변수 + 첫 배포
-- [ ] ingest/embed 500건 확장
+- [x] ingest/embed 500건 확장
 - [ ] 배포 URL smoke test + P95 응답 시간 측정
 
 ## 완료된 마일스톤
@@ -32,6 +32,14 @@
   - `POST /api/feedback`, `FeedbackForm`, `005_restrict_feedback_writes.sql`
 
 ## 마지막 검증 (Last Validation)
+
+2026-05-27 (M5 — GitHub push + 인덱스 확장)
+- `git push origin main` ✅ (`main -> origin/main`, latest `51a8270`)
+- `npm run ingest -- --max-pages 20` ✅
+- `npm run embed -- --limit 500` ✅ (성공 500, 스킵 0, 오류 0)
+- `npm run check:db` ✅ (`service_role`, documents 640건)
+- Supabase 행 수: `documents` 640, `document_embeds` 575, `feedback` 1
+- Vercel CLI/프로젝트 연결: 로컬에 없음 (`vercel` 없음, `.vercel` 없음)
 
 2026-05-24 (M5 — 배포 전 준비)
 - `npm test` ✅ (4 passed)
@@ -56,26 +64,25 @@
 
 ## 현재 최선 상태 (Current Best State)
 
-M5 **배포 전 준비**까지 완료. 로컬 빌드·보안·DB 점검 통과.
-데이터는 M5 목표(500건)보다 적음 (`documents` 200, `embeds` 75).
-실제 Vercel 배포는 `PRD/M5_DEPLOY_CHECKLIST.md`를 따라 진행하면 됨.
+M5 **GitHub push + 500건 인덱스 확장**까지 완료. 로컬 빌드·보안·DB 점검 통과.
+데이터는 M5 목표(500건)를 넘김 (`documents` 640, `document_embeds` 575).
+실제 Vercel 배포는 아직 대기 중이며, 로컬에 Vercel CLI/프로젝트 연결 정보가 없음.
 
 ## 다음 단계 (Next Step)
 
 **M5 실제 배포** — [`PRD/M5_DEPLOY_CHECKLIST.md`](./M5_DEPLOY_CHECKLIST.md)
 
-1. `git commit` + `git push origin main` (`.env` 미포함 확인)
-2. Vercel 대시보드에서 repo Import
-3. Production 환경변수 6종 등록 (`.env.example` 기준)
-4. 첫 Production 배포
-5. `npm run ingest -- --max-pages 20` + `npm run embed -- --limit 500`
-6. 배포 URL smoke test
+1. Vercel 대시보드에서 repo Import
+2. Production 환경변수 6종 등록 (`.env.example` 기준)
+3. 첫 Production 배포
+4. 배포 URL smoke test
+5. `PRD/PROGRESS.md`에 배포 URL과 검증 결과 기록
 
 ## 리스크 (Risks)
 
-- GitHub `main`에 M3/M4 코드가 아직 push되지 않음 → Vercel이 옛 코드를 빌드할 수 있음
-- `document_embeds` 75건만 있으면 배포 URL 검색 품질이 제한됨
-- Supabase 무료 티어 / Gemini API 한도 — 500건 확장 시 모니터링
+- Vercel 환경변수 누락/오타 시 검색 API가 런타임 500을 낼 수 있음
+- `SUPABASE_SERVICE_KEY`를 `NEXT_PUBLIC_` 변수에 넣으면 안 됨
+- Supabase 무료 티어 / Gemini API 한도 — 추가 확장 시 모니터링
 
 ## 인수인계 메모 (Handoff Notes)
 
