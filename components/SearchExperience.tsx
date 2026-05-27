@@ -80,6 +80,7 @@ export function SearchExperience() {
     }
 
     setLastSubmittedQuery(trimmed);
+    await executeSearch(trimmed, type, year);
   }
 
   function handleTypeChange(nextType: string) {
