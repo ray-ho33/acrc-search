@@ -9,79 +9,82 @@
 
 ## 현재 마일스톤
 
-**M1. 프로젝트 부트스트랩 + DB** (코드 측면 완료, 사용자 SQL 실행 대기)
+**M5. 배포 + 인덱스 확장** (배포 전 준비 완료, 실제 Vercel 배포는 보류)
 
-학습 모드로 5단계 분할:
-- [x] S1. 사전 준비 점검 + PROGRESS 갱신 + git tag `m1-start`
-- [x] S2. Next.js 부트스트랩 (Next.js 16 + React 19 + Tailwind v4, 임시 폴더 + 머지 방식)
-- [x] S3. 환경변수 (`.env.example`) + `lib/db.ts` (DB 단일 진입점) + `lib/types.ts`
-- [x] S4. `supabase/migrations/001_init.sql` 작성 완료 — **사용자가 Supabase SQL Editor 에서 실행 필요**
-- [x] S5. `npm run dev` → HTTP 200 확인 + 필수 검증 5종 통과 + 커밋
-
-## 사용자 핸드오프 (M2 시작 전 필수)
-
-1. **`.env` 파일 생성**: `cp .env.example .env` 후 6개 변수 채우기
-   - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` — Supabase 대시보드 > Project Settings > API
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — 같은 곳
-   - `GEMINI_API_KEY`, `KOREAN_LAW_API_KEY`
-2. **Supabase SQL 실행**: `supabase/migrations/001_init.sql` 내용을 Supabase 대시보드 > SQL Editor > New query > Run
-3. **테이블 4종 생성 확인**: Table Editor 에서 `documents`, `document_embeds`, `feedback`, `users` 표시되는지 눈으로 확인
-4. **확인 후 M2 시작 요청**
+- [x] 로컬 품질 검증 (`test` / `typecheck` / `lint` / `build`)
+- [x] Git·보안·Supabase 배포 전 점검
+- [x] `PRD/M5_DEPLOY_CHECKLIST.md` 작성
+- [ ] GitHub `main` push (M2~M4 미커밋 변경 다수)
+- [ ] Vercel Import + Production 환경변수 + 첫 배포
+- [ ] ingest/embed 500건 확장
+- [ ] 배포 URL smoke test + P95 응답 시간 측정
 
 ## 완료된 마일스톤
 
 - M1 (코드): 2026-05-22, 커밋 + tag `m1-code-complete`
+- M2 (파이프라인): 2026-05-22, 사용자 검증 완료
+  - `ingest` + `embed` 성공, `documents` / `document_embeds` 적재 확인
+  - `service_role` 키 교정, `002_grants.sql`, `parseDecidedAt` 잘못된 날짜 처리
+- M3 (검색 API + UI): 2026-05-23, 사용자 검증 완료
+  - 의미 기반 검색 API/UI 구현
+  - 결과 카드에서 내부 상세 페이지(`/documents/[id]`)의 저장 원문 열기 확인
+- M4 (환류 입력): 2026-05-24, 코드 + 수동 검증 완료
+  - `POST /api/feedback`, `FeedbackForm`, `005_restrict_feedback_writes.sql`
 
 ## 마지막 검증 (Last Validation)
 
-2026-05-22 (S5)
-- `npm run typecheck` ✅ (TypeScript 에러 0)
-- `npm run lint` ✅ (ESLint 에러 0)
-- `npm run build` ✅ (라우트 `/`, `/_not-found` 정적 생성)
-- `npm run dev` → `curl http://localhost:3000/` ✅ HTTP 200
-- `.env` 미존재 + `.gitignore` 에 `.env` 포함 ✅
-- git history 내 실제 API 키 0건 ✅
+2026-05-24 (M5 — 배포 전 준비)
+- `npm test` ✅ (4 passed)
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+- `npm run build` ✅
+- `.env` / `.vercel` → `.gitignore` ✅
+- Git: `main`, `origin` = `ray-ho33/acrc-search` ✅
+- Git 히스토리 API 키 패턴 스캔 ✅
+- `npm run check:db` ✅ (`service_role`, documents 200건)
+- Supabase 행 수: `documents` 200, `document_embeds` 75, `feedback` 1
+- `anon` → `feedback` 직접 INSERT 차단 ✅
+
+2026-05-24 (M4 — 수동 검증)
+- 환류 저장 UI + DB 행 확인 ✅
 
 ## 실패한 시도 (Failed Attempts)
 
-(없음)
+- M2: `SUPABASE_SERVICE_KEY`에 anon 키 입력 → `permission denied` (service_role 로 교정)
+- M2: 결정일 `2023-06-00` → `parseDecidedAt` 에서 null 처리로 해결
+- M3: 원문 링크가 DRF API 주소로 열림 → 앱 내부 `/documents/[id]` 저장 원문 페이지로 전환
 
 ## 현재 최선 상태 (Current Best State)
 
-S1 시작. PRD/.gitignore 보존 확정. Next.js 부트스트랩은 `_bootstrap/` 임시 폴더 경유로 진행하여 `PRD/`, `.gitignore`, `.git` 보호.
+M5 **배포 전 준비**까지 완료. 로컬 빌드·보안·DB 점검 통과.
+데이터는 M5 목표(500건)보다 적음 (`documents` 200, `embeds` 75).
+실제 Vercel 배포는 `PRD/M5_DEPLOY_CHECKLIST.md`를 따라 진행하면 됨.
 
 ## 다음 단계 (Next Step)
 
-**M2. 자료 수집 + 임베딩 파이프라인** (사용자 핸드오프 완료 후 시작)
+**M5 실제 배포** — [`PRD/M5_DEPLOY_CHECKLIST.md`](./M5_DEPLOY_CHECKLIST.md)
 
-1. 이전 레포(`https://github.com/ray-ho33/jeob-su`)에서 `acr-download.mjs`, `gemini-embed.mjs`, `load-env.mjs` 를 `scripts/lib/` 로 복사
-2. `scripts/ingest-decisions.mjs` 작성 — 의결례 수집 → Supabase `documents` UPSERT
-3. `scripts/build-embeddings.mjs` 작성 — `RETRIEVAL_DOCUMENT` 임베딩 + L2 정규화 + `document_embeds` UPSERT
-4. 검증: `documents` 행 ≥ 10건, `document_embeds` 행 ≥ 50건
+1. `git commit` + `git push origin main` (`.env` 미포함 확인)
+2. Vercel 대시보드에서 repo Import
+3. Production 환경변수 6종 등록 (`.env.example` 기준)
+4. 첫 Production 배포
+5. `npm run ingest -- --max-pages 20` + `npm run embed -- --limit 500`
+6. 배포 URL smoke test
 
 ## 리스크 (Risks)
 
-- Supabase 무료 티어 데이터 용량 한도 (500MB) — 데이터 500건은 충분히 여유
-- Gemini API 호출 한도 — 임베딩 500건 정도면 무료 한도 안에 들어옴
-- 이전 레포 코드 이식 시 ESM 구조 충돌 — Next.js는 `.mjs` 직접 못 부르니 `scripts/` 안에서만 사용
+- GitHub `main`에 M3/M4 코드가 아직 push되지 않음 → Vercel이 옛 코드를 빌드할 수 있음
+- `document_embeds` 75건만 있으면 배포 URL 검색 품질이 제한됨
+- Supabase 무료 티어 / Gemini API 한도 — 500건 확장 시 모니터링
 
 ## 인수인계 메모 (Handoff Notes)
 
 - 사용자: 프로그래밍 초보자, 한국어/존댓말, 페어 프로그래밍 학습 목적
-- 환경변수는 절대 코드에 직접 넣지 말 것. `.env`에서 읽기
-- 이전 레포 `https://github.com/ray-ho33/jeob-su`의 스크립트를 적극 재사용
-- 디자인은 인디고 톤 (Tailwind `indigo-*` + `slate-*`)
+- 환경변수는 절대 코드에 직접 넣지 말 것. `.env` / Vercel Env만 사용
+- M5 배포 방식: **Vercel 웹 대시보드(A안)** 권장 (사용자 선택: 오늘은 prep_only)
+- 디자인: 인디고 톤 (`indigo-*` + `slate-*`)
 
 ## 골 시작 기록
 
 - 시작 시각: 2026-05-22 (KST)
-- 사용 환경: Cursor IDE / Claude Opus 4.7
-- 진행 방식: 마일스톤별 사용자 확인 (페어 프로그래밍 학습 모드)
-- 컴팩트 후 `goal-command.md` 본문 길이: 2,378자 / 4,000자 한도
-- 사전 준비 대기 항목 (M1 시작 전 사용자가 직접 발급):
-  - [x] Supabase 프로젝트 생성 + URL, ANON_KEY, SERVICE_KEY 발급
-  - [x] Google AI Studio에서 `GEMINI_API_KEY` 발급
-  - [x] 법제처 Open API 신청해서 `KOREAN_LAW_API_KEY` 또는 `LAW_OC` 발급
-  - [x] GitHub 빈 레포지토리 생성
-  - [x] Vercel 계정 (M5에서 사용)
-  - 사용자 확인: 2026-05-22, 5종 모두 완료
+- 사전 준비: Supabase, Gemini, 법제처 API, GitHub, Vercel 계정 ✅

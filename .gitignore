@@ -42,6 +42,7 @@ _*.txt
 _*.md
 
 # ----- 데이터 (자료 수집 결과는 용량이 커서 보통 git에서 제외) -----
+.data/
 data/acr-decisions/text/
 data/acr-decisions/semantic/
 *.cache

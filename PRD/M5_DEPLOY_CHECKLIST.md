@@ -1,0 +1,205 @@
+# M5 배포 전 준비 + Vercel 대시보드 배포 체크리스트
+
+> 목적: **실제 Vercel 배포**를 누르기 전에 로컬·Git·Supabase 상태를 점검하고,  
+> Vercel 웹 대시보드에서 따라 할 단계를 한곳에 모아 둡니다.  
+> (2026-05-24 기준 배포 전 준비 완료)
+
+## 0. 배포 전 준비 결과 (자동 점검 요약)
+
+| 항목 | 결과 |
+|------|------|
+| `npm test` | ✅ 4 tests passed |
+| `npm run typecheck` | ✅ |
+| `npm run lint` | ✅ |
+| `npm run build` | ✅ (`/`, `/api/search`, `/api/feedback`, `/documents/[id]`) |
+| `.env` / `.vercel` Git 제외 | ✅ `.gitignore`에 등록됨 |
+| Git 브랜치 | `main` |
+| Git 원격 | `https://github.com/ray-ho33/acrc-search.git` |
+| Git 히스토리 키 노출 | ✅ 의심 패턴 없음 |
+| `.env.example` | ✅ 값 비어 있음 (예시만) |
+| Supabase `service_role` | ✅ (`npm run check:db`) |
+| `documents` 행 수 | **200** (M5 목표 500건 미달 — 배포 전/후 확장 필요) |
+| `document_embeds` 행 수 | **75** (임베딩 500건 목표 미달 — 배포 전/후 확장 필요) |
+| `feedback` anon 직접 INSERT | ✅ RLS/권한으로 차단됨 |
+
+**아직 안 한 것 (의도적으로 보류):**
+
+- GitHub에 M2~M4 변경사항 **커밋 + push**
+- Vercel 프로젝트 **Import** 및 **Production 배포**
+- Vercel **환경변수 6종** 등록
+- 의결례 **500건** ingest + embed 확장
+- 배포 URL **smoke test** 및 응답 시간 10회 측정
+
+---
+
+## 1. 배포 전에 Git에 올릴 변경사항 정리
+
+현재 `main`에 커밋되지 않은 작업이 많습니다. Vercel은 GitHub `main`을 기준으로 빌드하므로, **배포 전에 커밋·push**가 필요합니다.
+
+대표 포함 파일:
+
+- `app/`, `components/`, `lib/` (M3 검색, M4 환류)
+- `scripts/` (M2 ingest/embed)
+- `supabase/migrations/002` ~ `005`
+- `tests/`, `package.json`, `PRD/` 문서
+
+초보자용 명령 예시:
+
+```bash
+git add .
+git status   # .env 가 목록에 없는지 반드시 확인
+git commit -m "feat: M3 search, M4 feedback, M5 deploy prep"
+git push origin main
+```
+
+주의: `git status`에 `.env`가 보이면 **절대 커밋하지 마세요.**
+
+---
+
+## 2. Supabase 마이그레이션 최종 확인
+
+Supabase **SQL Editor**에서 아래 파일을 **이미 실행했는지** 확인하세요.  
+안 했다면 순서대로 Run 합니다.
+
+| 순서 | 파일 | 용도 |
+|------|------|------|
+| 1 | `supabase/migrations/001_init.sql` | 테이블 4개 + pgvector |
+| 2 | `supabase/migrations/002_grants.sql` | role별 GRANT |
+| 3 | `supabase/migrations/003_match_documents.sql` | 검색 RPC `match_documents` |
+| 4 | `supabase/migrations/004_fix_acr_public_urls.sql` | (선택) URL 정리 — 내부 상세 페이지 사용 중이면 필수는 아님 |
+| 5 | `supabase/migrations/005_restrict_feedback_writes.sql` | `feedback` anon 직접 쓰기 차단 |
+
+로컬에서 빠르게 확인:
+
+```bash
+npm run check:db
+```
+
+Table Editor에서 `documents` ≥ 1, `document_embeds` ≥ 1 이면 검색 데모는 가능합니다.  
+**M5 완료 기준(500건)** 은 아래 6절 ingest/embed를 추가로 실행해야 합니다.
+
+---
+
+## 3. Vercel 대시보드 — 프로젝트 연결 (A안)
+
+1. [vercel.com](https://vercel.com) 로그인
+2. **Add New…** → **Project**
+3. **Import Git Repository** → `ray-ho33/acrc-search` 선택
+4. Framework Preset: **Next.js** (자동 감지되면 그대로)
+5. Root Directory: `./` (기본값)
+6. Build Command: `npm run build` (기본값)
+7. Output: Next.js 기본 (변경 불필요)
+
+**아직 Deploy 버튼을 누르기 전에** 4절 환경변수를 먼저 넣는 것을 권장합니다.
+
+---
+
+## 4. Vercel 환경변수 등록 (Production)
+
+Vercel 프로젝트 → **Settings** → **Environment Variables**
+
+로컬 `.env`와 **이름이 1:1**로 맞아야 합니다. 값은 Supabase / Google AI Studio / 법제처에서 복사합니다.
+
+| 변수 | Vercel에 넣을 환경 | 비밀 여부 | 설명 |
+|------|-------------------|-----------|------|
+| `SUPABASE_URL` | Production (+ Preview 권장) | 비밀 | Supabase API URL |
+| `SUPABASE_SERVICE_KEY` | Production (+ Preview 권장) | **절대 공개 금지** | `service_role` (secret) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Production (+ Preview) | 공개 가능 | 보통 `SUPABASE_URL`과 동일 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production (+ Preview) | 공개 가능 | `anon` public key |
+| `GEMINI_API_KEY` | Production (+ Preview) | **절대 공개 금지** | 검색 쿼리 임베딩 |
+| `KOREAN_LAW_API_KEY` | Production (+ Preview) | **절대 공개 금지** | (로컬 ingest용; 앱 런타임 검색에는 필수 아님) |
+| `LAW_OC` | 선택 | 비밀 | `KOREAN_LAW_API_KEY`와 같게 넣어도 됨 |
+
+체크리스트:
+
+- [ ] `SUPABASE_SERVICE_KEY`가 `anon` 키가 **아님**
+- [ ] `NEXT_PUBLIC_` 변수에 `SERVICE_KEY`를 넣지 **않음**
+- [ ] Production에 6개(또는 `LAW_OC` 포함 7개) 등록 완료
+- [ ] 환경변수 저장 후 **Redeploy** 예정
+
+---
+
+## 5. 첫 Production 배포
+
+1. 환경변수 저장
+2. **Deployments** → **Redeploy** (또는 Import 직후 첫 Deploy)
+3. 빌드 로그에서 `npm run build` 성공 확인
+4. 배포 URL 복사 (예: `https://acrc-search-xxx.vercel.app`)
+
+실패 시 자주 나는 원인:
+
+| 증상 | 확인 |
+|------|------|
+| Build 실패 `env` | Vercel 환경변수 이름 오타 |
+| Runtime 500 on search | `GEMINI_API_KEY`, `SUPABASE_SERVICE_KEY` 누락 |
+| 검색 결과 0건 | `document_embeds` 행 수 부족 (75건이면 일부만 검색됨) |
+| 환류 저장 실패 | `005_restrict_feedback_writes.sql` 적용 + API는 `service_role` 사용 |
+
+---
+
+## 6. 인덱스 500건 확장 (M5 데이터 목표)
+
+배포 URL 데모 전에 **로컬 터미널**에서 실행합니다 (Vercel 빌드와 무관).
+
+```bash
+# 의결례 수집 → documents (대략 500건 목표)
+npm run ingest -- --max-pages 20
+
+# 임베딩 → document_embeds
+npm run embed -- --limit 500
+```
+
+완료 후 Supabase Table Editor 또는:
+
+```bash
+npm run check:db
+```
+
+목표: `documents` ≥ **500**, `document_embeds` ≥ **500**
+
+---
+
+## 7. 배포 후 Smoke Test (수동)
+
+배포 URL에서 아래를 순서대로 확인합니다.
+
+- [ ] 홈(`/`) 200, 검색 UI 표시
+- [ ] 검색어 `층간소음` / `공공주택` / `퇴직금` 중 1개 이상 → 결과 카드 ≥ 1
+- [ ] **저장 원문 보기** → `/documents/[id]` 상세 + 원문 텍스트
+- [ ] 환류 입력 → 저장 → Supabase `feedback`에 행 추가
+- [ ] 빈 검색어 → 안내 메시지 (400)
+
+응답 시간 (VALIDATION.md M5):
+
+- 같은 검색어로 **10회** 검색
+- 느린 응답이 P95 기준 2초 이하인지 대략 확인 (정밀 측정은 브라우저 Network 탭)
+
+---
+
+## 8. 배포 후 보안 빠른 확인
+
+- [ ] 브라우저 개발자 도구 → Network/소스에서 `SUPABASE_SERVICE_KEY`, `GEMINI_API_KEY` 문자열이 **보이지 않음**
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`만 노출되는 것은 정상
+
+---
+
+## 9. M5 완료 선언 조건 (`VALIDATION.md` 요약)
+
+- [ ] Vercel Production URL 200
+- [ ] 환경변수 `.env.example`과 1:1 매칭
+- [ ] `documents` / `document_embeds` 각 ≥ 500
+- [ ] 배포 URL manual demo 통과
+- [ ] `01_PRD.md` §7.2 acceptance criteria 10개 점검
+
+완료 후 `PRD/PROGRESS.md`에 배포 URL과 검증 날짜를 기록하세요.
+
+---
+
+## 10. 다음에 같이 할 작업
+
+1. Git commit + push
+2. Vercel Import + 환경변수 + 첫 배포
+3. ingest/embed 500건
+4. 배포 URL smoke test
+
+질문 예: **「M5 Vercel 배포 같이 해줘」**, **「500건 ingest/embed 같이 실행해줘」**
