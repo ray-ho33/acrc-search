@@ -17,6 +17,7 @@
 - 검색 결과 요약, 출처, 기관, 결정일 표시
 - 문서 상세 페이지에서 원문 내용 확인
 - 검색 결과에 대한 사용자 피드백 저장
+- Claude.ai 커스텀 커넥터용 MCP API 제공
 - 자료 수집, 임베딩 생성, DB 상태 확인용 스크립트 제공
 
 ## 기술 스택
@@ -115,7 +116,7 @@ npm run check:db
 ```text
 app/                    Next.js 페이지와 API 라우트
 components/             검색 UI와 피드백 UI 컴포넌트
-lib/                    DB, 검색, 임베딩, 피드백 로직
+lib/                    DB, 검색, 임베딩, 피드백, MCP 로직
 scripts/                자료 수집·임베딩·DB 점검 스크립트
 supabase/migrations/    Supabase 스키마와 권한 설정 SQL
 tests/                  단위 테스트
@@ -147,15 +148,60 @@ PRD/                    기획, 데이터 모델, 진행 기록
 
 문서가 도움이 되었는지에 대한 피드백을 저장합니다. 상세한 입력 검증 정책은 `lib/feedback.ts`와 `tests/feedback-validation.test.ts`를 참고하세요.
 
+### `POST /api/mcp`
+
+Claude.ai 커스텀 커넥터에서 사용할 수 있는 MCP(JSON-RPC) 엔드포인트입니다.
+
+운영 URL:
+
+```text
+https://acrc-search.vercel.app/api/mcp
+```
+
+제공 도구:
+
+| 도구 | 설명 |
+| --- | --- |
+| `health_check` | Supabase 연결 상태, 문서 수, 임베딩 모델 정보를 확인 |
+| `search_similar_decisions` | 민원 문장으로 유사 의결례 검색 |
+| `get_decision_detail` | 검색 결과의 `id`로 결정문 상세 내용 조회 |
+
+요청 예시:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search_similar_decisions",
+    "arguments": {
+      "query": "통학로 횡단보도 설치 민원",
+      "limit": 3
+    }
+  }
+}
+```
+
+현재 운영 배포에서 확인된 상태:
+
+```text
+health_check OK
+문서 수: 640건
+임베딩 모델: gemini-embedding-001
+임베딩 차원: 1536
+```
+
 ## 배포
 
 이 프로젝트는 Vercel 배포를 기준으로 구성되어 있습니다.
 
 1. GitHub 저장소를 Vercel에 Import합니다.
 2. Vercel Project Settings에서 `.env.example`에 있는 환경 변수를 등록합니다.
-3. Production 배포 후 `/`, `/api/search`, 문서 상세 페이지, `/api/feedback` 동작을 확인합니다.
+3. Production 배포 후 `/`, `/api/search`, 문서 상세 페이지, `/api/feedback`, `/api/mcp` 동작을 확인합니다.
 
 현재 운영 배포 URL은 https://acrc-search.vercel.app/ 입니다.
+Claude.ai 커스텀 커넥터에는 https://acrc-search.vercel.app/api/mcp 를 등록합니다.
 
 ## 참고 문서
 
