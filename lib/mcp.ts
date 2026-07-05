@@ -105,9 +105,10 @@ function formatDecisionDetail(document: Document | null): string {
 }
 
 export function createMcpHandler(dependencies: McpDependencies) {
+  // 반환값 null = JSON-RPC notification(id 없는 요청). 스펙상 응답을 보내면 안 된다.
   return async function handleMcpRequest(
     request: unknown
-  ): Promise<JsonRpcResponse> {
+  ): Promise<JsonRpcResponse | null> {
     if (!isRecord(request)) {
       return failure(null, -32600, "Invalid Request");
     }
@@ -116,11 +117,20 @@ export function createMcpHandler(dependencies: McpDependencies) {
     const method = typeof request.method === "string" ? request.method : undefined;
     const params = isRecord(request.params) ? request.params : undefined;
 
+    // id 멤버가 아예 없으면 notification. Claude.ai 커넥터는 initialize 직후
+    // notifications/initialized 를 보내므로 에러 없이 무응답 처리해야 한다.
+    if (!("id" in request)) {
+      return null;
+    }
+
     if (request.jsonrpc !== "2.0" || !method) {
       return failure(id, -32600, "Invalid Request");
     }
 
     switch (method) {
+      case "ping":
+        return success(id, {});
+
       case "initialize":
         return success(id, {
           protocolVersion:

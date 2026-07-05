@@ -68,6 +68,7 @@ Supabase 대시보드의 SQL Editor에서 `supabase/migrations` 폴더의 SQL을
 003_match_documents.sql
 004_fix_acr_public_urls.sql
 005_restrict_feedback_writes.sql
+006_restrict_anon_reads.sql
 ```
 
 정상적으로 실행되면 `documents`, `document_embeds`, `feedback`, `users` 테이블과 검색용 RPC가 생성됩니다.

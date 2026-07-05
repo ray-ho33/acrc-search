@@ -75,7 +75,7 @@ describe("MCP handler", () => {
       method: "tools/list",
     });
 
-    const result = response.result as ToolListResult;
+    const result = response?.result as ToolListResult;
     const toolNames = result.tools.map((tool) => tool.name);
     expect(toolNames).toEqual([
       "health_check",
@@ -98,7 +98,7 @@ describe("MCP handler", () => {
       },
     });
 
-    const result = response.result as ToolCallResult;
+    const result = response?.result as ToolCallResult;
     expect(result.content[0].type).toBe("text");
     expect(result.content[0].text).toContain("초등학교 앞 횡단보도 설치 요구");
     expect(result.content[0].text).toContain("0.870");
@@ -115,7 +115,7 @@ describe("MCP handler", () => {
       },
     });
 
-    const result = response.result as ToolCallResult;
+    const result = response?.result as ToolCallResult;
     expect(result.content[0].text).toContain("결정문 전문");
     expect(result.content[0].text).toContain("2024-민원-1");
   });
@@ -131,7 +131,7 @@ describe("MCP handler", () => {
       },
     });
 
-    expect(response.error).toMatchObject({ code: -32602 });
+    expect(response?.error).toMatchObject({ code: -32602 });
   });
 
   it("rejects detail calls without an id", async () => {
@@ -145,13 +145,13 @@ describe("MCP handler", () => {
       },
     });
 
-    expect(response.error).toMatchObject({ code: -32602 });
+    expect(response?.error).toMatchObject({ code: -32602 });
   });
 
   it("returns invalid request for non-object JSON-RPC payloads", async () => {
     const response = await makeHandler()(null);
 
-    expect(response.error).toMatchObject({ code: -32600 });
+    expect(response?.error).toMatchObject({ code: -32600 });
   });
 
   it("returns JSON-RPC error for an unknown method", async () => {
@@ -161,6 +161,25 @@ describe("MCP handler", () => {
       method: "unknown/method",
     });
 
-    expect(response.error).toMatchObject({ code: -32601 });
+    expect(response?.error).toMatchObject({ code: -32601 });
+  });
+
+  it("returns no response for notifications (requests without an id)", async () => {
+    const response = await makeHandler()({
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
+    });
+
+    expect(response).toBeNull();
+  });
+
+  it("responds to ping with an empty result", async () => {
+    const response = await makeHandler()({
+      jsonrpc: "2.0",
+      id: 8,
+      method: "ping",
+    });
+
+    expect(response).toMatchObject({ jsonrpc: "2.0", id: 8, result: {} });
   });
 });

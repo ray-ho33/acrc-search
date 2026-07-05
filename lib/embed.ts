@@ -18,7 +18,32 @@ function l2Normalize(values: number[]): number[] {
   return values.map((value) => value / norm);
 }
 
+// 동일 검색어 반복 시 Gemini 재호출을 막는 인메모리 LRU 캐시.
+// 임베딩은 모델이 같으면 결정적이므로 TTL 없이 크기 상한만 둔다.
+const CACHE_MAX_ENTRIES = 500;
+const embeddingCache = new Map<string, number[]>();
+
+function getCachedEmbedding(query: string): number[] | undefined {
+  const cached = embeddingCache.get(query);
+  if (!cached) return undefined;
+  // Map 삽입 순서를 LRU 순서로 사용: 조회 시 맨 뒤로 보낸다
+  embeddingCache.delete(query);
+  embeddingCache.set(query, cached);
+  return cached;
+}
+
+function setCachedEmbedding(query: string, values: number[]): void {
+  embeddingCache.set(query, values);
+  if (embeddingCache.size > CACHE_MAX_ENTRIES) {
+    const oldest = embeddingCache.keys().next().value;
+    if (oldest !== undefined) embeddingCache.delete(oldest);
+  }
+}
+
 export async function embedSearchQuery(query: string): Promise<number[]> {
+  const cached = getCachedEmbedding(query);
+  if (cached) return cached;
+
   const apiKey = requireEnv("GEMINI_API_KEY");
   const url = `${GEMINI_BASE_URL}/models/${EMBED_MODEL}:embedContent`;
 
@@ -73,5 +98,7 @@ export async function embedSearchQuery(query: string): Promise<number[]> {
     throw new Error("Gemini 응답에 embedding.values 가 없습니다.");
   }
 
-  return l2Normalize(values);
+  const normalized = l2Normalize(values);
+  setCachedEmbedding(query, normalized);
+  return normalized;
 }

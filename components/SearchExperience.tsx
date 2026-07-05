@@ -68,17 +68,6 @@ export function SearchExperience() {
 
   async function runSearch() {
     const trimmed = query.trim();
-    if (!trimmed) {
-      setLastSubmittedQuery("");
-      await executeSearch(trimmed, type, year);
-      return;
-    }
-
-    if (trimmed === lastSubmittedQuery) {
-      await executeSearch(trimmed, type, year);
-      return;
-    }
-
     setLastSubmittedQuery(trimmed);
     await executeSearch(trimmed, type, year);
   }

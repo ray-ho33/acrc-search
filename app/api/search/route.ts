@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 import { searchDocuments } from "@/lib/search";
+
+// 분당 20회 — 사람이 쓰는 검색 UI 기준으로 넉넉하고, 봇의 비용 공격은 차단
+const rateLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
 
 interface SearchRequestBody {
   q?: unknown;
@@ -31,6 +35,19 @@ function parseLimit(value: unknown): number | undefined {
 }
 
 export async function POST(request: Request) {
+  const rate = rateLimiter.check(getClientIp(request));
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        error: {
+          message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+          code: "RATE_LIMITED",
+        },
+      },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
+
   let body: SearchRequestBody;
   try {
     body = (await request.json()) as SearchRequestBody;
@@ -54,6 +71,20 @@ export async function POST(request: Request) {
     );
   }
 
+  let year: number | undefined;
+  let limit: number | undefined;
+  try {
+    year = parseYear(body.filters?.year);
+    limit = parseLimit(body.limit);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "요청 값이 올바르지 않습니다.";
+    return NextResponse.json(
+      { error: { message, code: "BAD_REQUEST" } },
+      { status: 400 }
+    );
+  }
+
   try {
     const results = await searchDocuments(query, {
       filters: {
@@ -61,17 +92,21 @@ export async function POST(request: Request) {
           typeof body.filters?.type === "string" && body.filters.type !== "all"
             ? body.filters.type
             : undefined,
-        year: parseYear(body.filters?.year),
+        year,
       },
-      limit: parseLimit(body.limit),
+      limit,
     });
 
     return NextResponse.json({ results });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "검색 중 알 수 없는 오류가 발생했습니다.";
+    console.error("[api/search] 검색 실패:", error);
     return NextResponse.json(
-      { error: { message, code: "SEARCH_FAILED" } },
+      {
+        error: {
+          message: "검색 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+          code: "SEARCH_FAILED",
+        },
+      },
       { status: 500 }
     );
   }
